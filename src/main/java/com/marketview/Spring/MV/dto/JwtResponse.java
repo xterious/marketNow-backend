@@ -1,14 +1,14 @@
 package com.marketview.Spring.MV.dto;
 
-import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Getter
-public class JwtResponse {
-    private final String token;
-
-    public JwtResponse(String token) {
-        this.token = token;
+/**
+ * JwtResponse extends AuthResponse for backward compatibility
+ * with code that uses JwtResponse instead of AuthResponse
+ */
+public class JwtResponse extends AuthResponse {
+    public JwtResponse(String accessToken) {
+        super(accessToken);
     }
-
 }
 

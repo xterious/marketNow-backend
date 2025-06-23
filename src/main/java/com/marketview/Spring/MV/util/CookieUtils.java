@@ -5,6 +5,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.util.SerializationUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -50,9 +53,14 @@ public class CookieUtils {
         return Base64.getUrlEncoder().encodeToString(SerializationUtils.serialize(object));
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
-        return cls.cast(SerializationUtils.deserialize(
-                Base64.getUrlDecoder().decode(cookie.getValue())
-        ));
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getUrlDecoder().decode(cookie.getValue()));
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+            return cls.cast(ois.readObject());
+        } catch (IOException | ClassNotFoundException e) {
+            throw new IllegalArgumentException("Failed to deserialize cookie value", e);
+        }
     }
+
 }

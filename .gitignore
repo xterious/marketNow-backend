@@ -19,6 +19,9 @@ target/
 *.iml
 *.ipr
 
+
+set-env.bat
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

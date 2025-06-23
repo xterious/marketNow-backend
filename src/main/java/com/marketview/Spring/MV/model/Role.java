@@ -24,7 +24,14 @@ public class Role {
 
     private String description;
 
+    public Role(String name) {
+        this.name = name;
+    }
+
+
     public static final String ROLE_USER = "ROLE_USER";
     public static final String ROLE_ADMIN = "ROLE_ADMIN";
     public static final String ROLE_PREMIUM = "ROLE_PREMIUM";
+
 }
+

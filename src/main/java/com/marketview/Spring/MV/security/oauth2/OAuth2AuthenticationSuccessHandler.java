@@ -1,38 +1,36 @@
-package com.marketview.Spring.MV.security;
+package com.marketview.Spring.MV.security.oauth2;
 
-import com.marketview.Spring.MV.util.JwtUtil;
+import com.marketview.Spring.MV.security.JwtUtil;
+import com.marketview.Spring.MV.security.UserPrincipal;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
 @Component
-public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+
+    public OAuth2AuthenticationSuccessHandler(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
-        String username = authentication.getName();
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
-        // Generate JWT token
-        String token = jwtUtil.generateToken(username);
+        String token = jwtUtil.generateToken(userPrincipal);
 
-        // Redirect to frontend URL with token as query param
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth2/redirect")
-                .queryParam("token", token)
-                .build().toUriString();
-
-        response.sendRedirect(targetUrl);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"token\": \"" + token + "\"}");
+        response.getWriter().flush();
     }
 }

@@ -1,39 +1,40 @@
 package com.marketview.Spring.MV.security;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-
+import com.marketview.Spring.MV.model.Role;
+import com.marketview.Spring.MV.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import com.marketview.Spring.MV.model.User;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import java.util.Map;
-import java.util.HashMap;
+public class UserPrincipal implements UserDetails, OAuth2User {
 
-public class UserPrincipal implements OAuth2User, UserDetails {
-
-    private String id;
-    private String username;
-    private String email;
-    private String password;
-    private Collection<? extends GrantedAuthority> authorities;
+    private final String id;
+    private final String username;
+    private final String email;
+    private final String password;
+    private final Collection<? extends GrantedAuthority> authorities;
     private Map<String, Object> attributes;
 
+    // Constructor
     public UserPrincipal(String id, String username, String email, String password,
                          Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
-        this.authorities = authorities;
+        this.authorities = authorities != null ? authorities : Collections.emptyList();
     }
 
+    // Factory method to create a UserPrincipal from a User entity
     public static UserPrincipal create(User user) {
-        Collection<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(Role::getName)
+                .map(role -> new SimpleGrantedAuthority(
+                        role.startsWith("ROLE_") ? role : "ROLE_" + role))
                 .collect(Collectors.toList());
 
         return new UserPrincipal(
@@ -45,8 +46,9 @@ public class UserPrincipal implements OAuth2User, UserDetails {
         );
     }
 
+    // Factory method for OAuth2 user (Google sign-in)
     public static UserPrincipal create(User user, Map<String, Object> attributes) {
-        UserPrincipal userPrincipal = UserPrincipal.create(user);
+        UserPrincipal userPrincipal = create(user);
         userPrincipal.setAttributes(attributes);
         return userPrincipal;
     }
@@ -55,9 +57,37 @@ public class UserPrincipal implements OAuth2User, UserDetails {
         return id;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
     @Override
     public String getUsername() {
         return username;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return attributes != null ? attributes : new HashMap<>();
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+
+    @Override
+    public String getName() {
+        return id;  // Can return email or name based on your requirement
     }
 
     @Override
@@ -78,33 +108,5 @@ public class UserPrincipal implements OAuth2User, UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
-    }
-
-    @Override
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
-
-    @Override
-    public String getName() {
-        return String.valueOf(id);
     }
 }

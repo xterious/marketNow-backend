@@ -109,6 +109,25 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Spring Security OAuth2 Client -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+
+		<!-- Spring Security Core -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<!-- Nimbus JOSE + JWT (used by Spring Security OAuth2) -->
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>oauth2-oidc-sdk</artifactId>
+			<version>10.4</version> <!-- Ensure this is a compatible version -->
+		</dependency>
+
 	</dependencies>
 
 	<build>
