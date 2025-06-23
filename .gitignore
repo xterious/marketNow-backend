@@ -20,7 +20,7 @@ target/
 *.ipr
 
 
-set-env.bat
+application.properties
 
 ### NetBeans ###
 /nbproject/private/
