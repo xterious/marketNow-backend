@@ -14,7 +14,7 @@
 	<artifactId>Spring-MV</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Spring-MV</name>
-	<description>Financial Instituion in LA</description>
+	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -30,8 +30,6 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<sonar.organization>xterious</sonar.organization>
-		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 	<dependencies>
 		<dependency>
