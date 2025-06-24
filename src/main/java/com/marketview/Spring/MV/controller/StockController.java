@@ -2,38 +2,47 @@ package com.marketview.Spring.MV.controller;
 
 import com.marketview.Spring.MV.model.Stock;
 import com.marketview.Spring.MV.service.StockService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/stocks")
+@RequestMapping("/api/stocks")
 public class StockController {
 
-    @Autowired
-    private StockService stockService;
+    private final StockService stockService;
 
-    @GetMapping
-    public List<Stock> getAllStocks() {
-        return stockService.getAllStocks();
+    public StockController(StockService stockService) {
+        this.stockService = stockService;
     }
 
-    @PostMapping
-    public Stock createStock(@RequestBody Stock stock) {
-        return stockService.createStock(stock);
+    // Fetch stock symbols for an exchange
+    @GetMapping("/symbols")
+    public List<Stock> getStockSymbols(@RequestParam String exchange) {
+        return stockService.getStockSymbols(exchange);
     }
 
-    @GetMapping("/{symbol}")
-    public Stock getStockBySymbol(@PathVariable String symbol) {
-        return stockService.getStockBySymbol(symbol);
+    // Fetch quote for a specific stock
+    @GetMapping("/quote")
+    public Stock getStockQuote(@RequestParam String symbol) {
+        return stockService.getStockQuote(symbol);
     }
 
-    @PutMapping("/{symbol}")
-    public Stock updateStock(@PathVariable String symbol, @RequestBody Stock stock) {
-        return stockService.updateStock(symbol, stock);
+    // Add to wishlist
+    @PostMapping("/wishlist/{symbol}")
+    public Stock addToWishlist(@PathVariable String symbol) {
+        return stockService.addToWishlist(symbol);
     }
 
+    // Remove from wishlist
+    @DeleteMapping("/wishlist/{symbol}")
+    public void removeFromWishlist(@PathVariable String symbol) {
+        stockService.removeFromWishlist(symbol);
+    }
 
+    // View wishlist
+    @GetMapping("/wishlist")
+    public Iterable<Stock> getWishlist() {
+        return stockService.getWishlist();
+    }
 }
-
