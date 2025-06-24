@@ -7,10 +7,12 @@ import com.marketview.Spring.MV.model.Role;
 import com.marketview.Spring.MV.model.User;
 import com.marketview.Spring.MV.repository.RoleRepository;
 import com.marketview.Spring.MV.repository.UserRepository;
-import com.marketview.Spring.MV.security.CustomUserDetailsService;
 import com.marketview.Spring.MV.security.JwtUtil;
 import com.marketview.Spring.MV.security.UserPrincipal;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.marketview.Spring.MV.util.CustomException;
+import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,43 +24,48 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-
+@AllArgsConstructor
 @Service
 public class AuthService {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    private RoleRepository roleRepository;
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final RoleRepository roleRepository;
 
-    public ResponseEntity<?> register(RegisterRequest registerRequest) {
+
+    private final PasswordEncoder passwordEncoder;
+
+
+    private final JwtUtil jwtUtil;
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
+    public ResponseEntity<User> register(RegisterRequest registerRequest) {
+        // Validate request
+
+        if (registerRequest.getUsername() == null || registerRequest.getUsername().trim().isEmpty()) {
+            throw new CustomException("Username cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if (registerRequest.getEmail() == null || registerRequest.getEmail().trim().isEmpty()) {
+            throw new CustomException("Email cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if (registerRequest.getPassword() == null || registerRequest.getPassword().trim().isEmpty()) {
+            throw new CustomException("Password cannot be empty", HttpStatus.BAD_REQUEST);
+        }
         // Check if username is already taken
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Error: Username is already taken!");
+            throw new CustomException("Username is already taken", HttpStatus.CONFLICT);
         }
 
         // Check if email is already in use
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Error: Email is already in use!");
+            throw new CustomException("Email is already in use", HttpStatus.CONFLICT);
         }
 
         // Create new user
@@ -82,13 +89,25 @@ public class AuthService {
         roles.add(userRole);
         user.setRoles(roles);
 
-        userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully");
+        try {
+            userRepository.save(user);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            throw new CustomException("Failed to register user: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public ResponseEntity<?> login(LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(LoginRequest request) {
+        // Validate request
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+            throw new CustomException("Username cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            throw new CustomException("Password cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+
         try {
-            System.out.println("Attempting to authenticate user: " + request.getUsername());
+            logger.info("Attempting to authenticate user: {}", request.getUsername());
 
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -98,21 +117,28 @@ public class AuthService {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+
+            logger.info("Authentication successful for user: {}", userPrincipal.getUsername());
+
+            // Generate JWT token
             String token = jwtUtil.generateToken(userPrincipal);
 
-            System.out.println("Authentication successful for user: " + userPrincipal.getUsername());
+            AuthResponse authResponse = new AuthResponse(
+                userPrincipal.getUsername(),
+                userPrincipal.getEmail(),
+                userPrincipal.getAuthorities()
+            );
 
-            AuthResponse authResponse = new AuthResponse(token, userPrincipal.getUsername(), userPrincipal.getEmail(), userPrincipal.getAuthorities());
+            // Add token to the response
+            authResponse.setToken(token);
 
             return ResponseEntity.ok(authResponse);
 
         } catch (BadCredentialsException e) {
-            System.out.println("Invalid credentials for user: " + request.getUsername());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password.");
+            logger.warn("Invalid credentials for user: {}", request.getUsername());
+            throw new CustomException("Invalid username or password", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
-            System.out.println("Login exception: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed: " + e.getMessage());
+            throw new CustomException("Login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -11,7 +11,10 @@ import java.io.ObjectInputStream;
 import java.util.Base64;
 import java.util.Optional;
 
-public class CookieUtils {
+class CookieUtils {
+    private CookieUtils() {
+        throw new IllegalStateException("Utility class");
+    }
 
     public static Optional<Cookie> getCookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
@@ -53,6 +56,7 @@ public class CookieUtils {
         return Base64.getUrlEncoder().encodeToString(SerializationUtils.serialize(object));
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(Base64.getUrlDecoder().decode(cookie.getValue()));
              ObjectInputStream ois = new ObjectInputStream(bis)) {
@@ -61,4 +65,5 @@ public class CookieUtils {
             throw new IllegalArgumentException("Failed to deserialize cookie value", e);
         }
     }
+
 }

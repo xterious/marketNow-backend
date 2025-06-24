@@ -2,16 +2,16 @@ package com.marketview.Spring.MV.service;
 
 import com.marketview.Spring.MV.model.User;
 import com.marketview.Spring.MV.repository.UserRepository;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
+@Data
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     public List<User> getAllUsers() {
         return userRepository.findAll();

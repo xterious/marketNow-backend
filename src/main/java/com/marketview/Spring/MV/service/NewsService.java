@@ -1,41 +1,55 @@
 package com.marketview.Spring.MV.service;
-
 import com.marketview.Spring.MV.model.News;
 import com.marketview.Spring.MV.repository.NewsRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.marketview.Spring.MV.util.CustomException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
-@Service
-public class NewsService {
 
-    @Autowired
-    private NewsRepository newsRepository;
+@Service
+@RequiredArgsConstructor
+public class NewsService {
+    private final NewsRepository newsRepository;
+
+    @Value("${finnhub.api.key}")
+    private String finnhubApiKey;
+
+
 
     public List<News> getAllNews() {
         return newsRepository.findAll();
     }
 
-    public News getNewsById(String id) {
-        return newsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("News not found"));
+    public List<News> getNewsByCategory(String category) {
+        return newsRepository.findByCategory(category);
     }
 
-    public News createNews(News news) {
-        return newsRepository.save(news);
-    }
-
-    public News updateNews(String id, News newsDetails) {
-        News news = getNewsById(id);
-        news.setTitle(newsDetails.getTitle());
-        news.setContent(newsDetails.getContent());
-        // update other fields
-        return newsRepository.save(news);
-    }
-
-    public void deleteNews(String id) {
-        News news = getNewsById(id);
-        newsRepository.delete(news);
+    public List<News> getNewsByStock(String symbol) {
+        try {
+            String url = String.format(
+                    "https://finnhub.io/api/v1/company-news?symbol=%s&from=%s&to=%s&token=%s",
+                    symbol,
+                    LocalDateTime.now().minusDays(7).toLocalDate(),
+                    LocalDateTime.now().toLocalDate(),
+                    finnhubApiKey
+            );
+            RestTemplate restTemplate = new RestTemplate();
+            News[] response = restTemplate.getForObject(url, News[].class);
+            // Optionally save to DB
+            if (response != null && response.length > 0) {
+                newsRepository.saveAll(Arrays.asList(response));
+                return Arrays.asList(response);
+            }
+            return List.of();
+        } catch (Exception e) {
+            throw new CustomException(e.getMessage(), HttpStatus.NO_CONTENT);
+        }
     }
 }

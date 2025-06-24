@@ -39,8 +39,19 @@ public class AuthResponse {
         this.tokenType = "Bearer";
     }
 
+    public AuthResponse(String username, String email, Collection<? extends GrantedAuthority> authorities) {
+        this.username = username;
+        this.email = email;
+        this.roles = authorities;
+        this.tokenType = "Bearer";
+    }
+
     // Optional convenience method for legacy code
     public String getToken() {
         return accessToken;
+    }
+
+    public void setToken(String token) {
+        this.accessToken = token;
     }
 }

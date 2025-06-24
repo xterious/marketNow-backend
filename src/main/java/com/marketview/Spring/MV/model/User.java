@@ -3,14 +3,10 @@ package com.marketview.Spring.MV.model;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -45,23 +41,12 @@ public class User {
         this.roles.add(role);
     }
 
-    // Check if user has specific role
+    // Check if a user has a specific role
     public boolean hasRole(String roleName) {
         return this.roles.stream()
                 .anyMatch(role -> role.getName().equals(roleName));
     }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
 }
 
 
