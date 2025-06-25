@@ -2,11 +2,11 @@ package com.marketview.Spring.MV.service;
 
 import com.marketview.Spring.MV.model.User;
 import com.marketview.Spring.MV.repository.UserRepository;
+import com.marketview.Spring.MV.util.CustomException;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
+
 @Data
 @Service
 public class UserService {
@@ -15,6 +15,12 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    public List<String> getAllUsernames() {
+        return userRepository.findAll().stream()
+                .map(User::getUsername)
+                .toList();
     }
 
     public User getUserById(String id) {
@@ -37,5 +43,11 @@ public class UserService {
     public void deleteUser(String id) {
         User user = getUserById(id);
         userRepository.delete(user);
+    }
+
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomException("User not found with username: " + username,
+                        org.springframework.http.HttpStatus.NOT_FOUND));
     }
 }

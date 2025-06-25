@@ -1,12 +1,18 @@
 package com.marketview.Spring.MV.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.core.serializer.Serializer;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
+
 @Document(collection = "stocks")
 @Data
-public class Stock {
+@NoArgsConstructor
+public class Stock implements Serializable {
     @Id
     private String symbol;
     private String currency;
@@ -24,58 +30,12 @@ public class Stock {
     private Double previousClose; // Maps to /quote's "pc"
     private Long timestamp;
 
-    public Stock() {}
-
-    public Stock(String symbol, String currency, String description, String displaySymbol,
-                 String figi, String mic, String type, Double currentPrice,
-                 Double change, Double percentChange, Double high, Double low,
-                 Double open, Double previousClose) {
+    public Stock(String symbol, String usd, String symbol1, String symbol2, Object o, Object o1, String commonStock, Double currentPrice, Object o2, Object o3, Object o4, Object o5, Object o6, Object o7) {
         this.symbol = symbol;
-        this.currency = currency;
-        this.description = description;
-        this.displaySymbol = displaySymbol;
-        this.figi = figi;
-        this.mic = mic;
-        this.type = type;
+        this.currency = usd;
+        this.description = symbol1;
+        this.displaySymbol = symbol2;
+        this.figi = commonStock;
         this.currentPrice = currentPrice;
-        this.change = change;
-        this.percentChange = percentChange;
-        this.high = high;
-        this.low = low;
-        this.open = open;
-        this.previousClose = previousClose;
-        this.timestamp = timestamp;
     }
-
-    // Getters and setters
-    public String getSymbol() { return symbol; }
-    public void setSymbol(String symbol) { this.symbol = symbol; }
-    public String getCurrency() { return currency; }
-    public void setCurrency(String currency) { this.currency = currency; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getDisplaySymbol() { return displaySymbol; }
-    public void setDisplaySymbol(String displaySymbol) { this.displaySymbol = displaySymbol; }
-    public String getFigi() { return figi; }
-    public void setFigi(String figi) { this.figi = figi; }
-    public String getMic() { return mic; }
-    public void setMic(String mic) { this.mic = mic; }
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
-    public Double getCurrentPrice() { return currentPrice; }
-    public void setCurrentPrice(Double currentPrice) { this.currentPrice = currentPrice; }
-    public Double getChange() { return change; }
-    public void setChange(Double change) { this.change = change; }
-    public Double getPercentChange() { return percentChange; }
-    public void setPercentChange(Double percentChange) { this.percentChange = percentChange; }
-    public Double getHigh() { return high; }
-    public void setHigh(Double high) { this.high = high; }
-    public Double getLow() { return low; }
-    public void setLow(Double low) { this.low = low; }
-    public Double getOpen() { return open; }
-    public void setOpen(Double open) { this.open = open; }
-    public Double getPreviousClose() { return previousClose; }
-    public void setPreviousClose(Double previousClose) { this.previousClose = previousClose; }
-    public Long getTimestamp() { return timestamp; }
-    public void setTimestamp(Long timestamp) { this.timestamp = timestamp; }
 }
