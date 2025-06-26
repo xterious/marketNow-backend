@@ -6,6 +6,7 @@ import com.marketview.Spring.MV.model.News;
 import com.marketview.Spring.MV.model.NewsCategory;
 import com.marketview.Spring.MV.repository.NewsCategoryRepository;
 import com.marketview.Spring.MV.repository.NewsRepository;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -26,16 +28,22 @@ public class NewsService {
     private final NewsRepository newsRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private NewsCategoryRepository newsCategoryRepository;
+    private final NewsCategoryRepository newsCategoryRepository;
 
 
     @Value("${finnhub.api.key}")
     private String finnhubApiKey;
 
-    public NewsService(NewsRepository newsRepository, RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public NewsService(NewsRepository newsRepository, RestTemplate restTemplate, ObjectMapper objectMapper, NewsCategoryRepository newsCategoryRepository) {
         this.newsRepository = newsRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.newsCategoryRepository = newsCategoryRepository;
+    }
+
+    @PostConstruct
+    public void init() {
+        logger.info("Finnhub API Key loaded: {}", finnhubApiKey);
     }
 
     @Cacheable(value = "newsByCategory", key = "#category")
@@ -59,18 +67,19 @@ public class NewsService {
                 .toList();
     }
 
-    @Scheduled(fixedRate = 300000) // Every 5 minutes
+    @Scheduled(fixedRate = 30000) // Every 5 minutes
     @CacheEvict(value = {"newsByCategory", "topHeadlines"}, allEntries = true)
     public void refreshNewsCache() {
         logger.info("Refreshing news cache");
         newsRepository.deleteAll();
         fetchAndStoreNews(null);
     }
-
-    private void fetchAndStoreNews(String category) {
-        String url = "https://finnhub.io/api/v1/news"
-                + (category != null && !category.isEmpty() ? "?category=" + category : "")
+    @Transactional
+    protected void fetchAndStoreNews(String category) {
+        String url = "https://finnhub.io/api/v1/news?"
+                + (category != null && !category.isEmpty() ? "category=" + category : "business")
                 + "&token=" + finnhubApiKey;
+        logger.info("Fetching news from URL: {}", url);
 
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
@@ -96,7 +105,6 @@ public class NewsService {
 
                     // Only save to MongoDB if you want to persist all news
                     News news = new News(
-                            null,        // id (let MongoDB generate)
                             cat,
                             datetime,
                             headline,

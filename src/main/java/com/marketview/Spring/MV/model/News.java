@@ -11,8 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @Data
 public class News {
-    @Id
-    private Object id;
     private String category;      // e.g., "company news"
     private Long datetime;        // Unix timestamp or ISO date
     private String headline;      // News headline/title
@@ -23,8 +21,7 @@ public class News {
     private String summary;       // Short summary/description
     private String url;           // Link to full article
 
-    public News(Object o, String cat, long datetime, String headline, String image, String source, String summary, String urlField) {
-        this.id = o;
+    public News(String cat, long datetime, String headline, String image, String source, String summary, String urlField) {
         this.category = cat;
         this.datetime = datetime;
         this.headline = headline;
