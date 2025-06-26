@@ -10,6 +10,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,16 +27,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@Data
 public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
 
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final CustomUserDetailsService customUserDetailsService;
+
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -103,7 +103,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } catch (CustomException e) {
-            // Handle custom exceptions and return proper JSON response
+            // Handle custom exceptions and return a proper JSON response
             response.setStatus(e.getStatus().value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             Map<String, String> error = new HashMap<>();

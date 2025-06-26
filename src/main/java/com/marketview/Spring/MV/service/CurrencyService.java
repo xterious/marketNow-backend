@@ -2,16 +2,17 @@ package com.marketview.Spring.MV.service;
 
 import com.marketview.Spring.MV.model.Currency;
 import com.marketview.Spring.MV.repository.CurrencyRepository;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Data
 public class CurrencyService {
 
-    @Autowired
-    private CurrencyRepository currencyRepository;
+    private final CurrencyRepository currencyRepository;
 
     public List<Currency> getAllCurrencies() {
         return currencyRepository.findAll();

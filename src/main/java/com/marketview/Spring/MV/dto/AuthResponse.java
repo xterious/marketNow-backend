@@ -15,9 +15,10 @@ import java.util.Collection;
 public class AuthResponse {
 
     private String accessToken;
+    private static final String PREFIX = "Bearer ";
 
     @Builder.Default
-    private String tokenType = "Bearer";
+    private String tokenType = PREFIX;
 
     private String username;
     private String email;
@@ -26,7 +27,7 @@ public class AuthResponse {
     // 1-arg constructor for token only
     public AuthResponse(String accessToken) {
         this.accessToken = accessToken;
-        this.tokenType = "Bearer";
+        this.tokenType = PREFIX;
     }
 
     // 4-arg constructor: accessToken, username, email, roles (tokenType default "Bearer")
@@ -36,14 +37,14 @@ public class AuthResponse {
         this.username = username;
         this.email = email;
         this.roles = roles;
-        this.tokenType = "Bearer";
+        this.tokenType = PREFIX;
     }
 
     public AuthResponse(String username, String email, Collection<? extends GrantedAuthority> authorities) {
         this.username = username;
         this.email = email;
         this.roles = authorities;
-        this.tokenType = "Bearer";
+        this.tokenType = PREFIX;
     }
 
     // Optional convenience method for legacy code

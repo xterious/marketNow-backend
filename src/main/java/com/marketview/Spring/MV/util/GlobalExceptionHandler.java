@@ -17,10 +17,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    public final static String MSG = "message";
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(CustomException ex) {
         Map<String, String> map = new HashMap<>();
-        map.put("message", ex.getMessage());
+        map.put(MSG, ex.getMessage());
         return ResponseEntity
                 .status(ex.getStatus()).body(map);
     }
@@ -28,21 +29,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Object> handleAuthenticationException(AuthenticationException ex) {
         Map<String, String> map = new HashMap<>();
-        map.put("message", ex.getMessage() != null ? ex.getMessage() : "Authentication failed");
+        map.put(MSG, ex.getMessage() != null ? ex.getMessage() : "Authentication failed");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(map);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Object> handleBadCredentialsException(BadCredentialsException ex) {
         Map<String, String> map = new HashMap<>();
-        map.put("message", "Invalid username or password");
+        map.put(MSG, "Invalid username or password");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(map);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex) {
         Map<String, String> map = new HashMap<>();
-        map.put("message", "Access denied: insufficient permissions");
+        map.put(MSG, "Access denied: insufficient permissions");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(map);
     }
 
@@ -54,7 +55,7 @@ public class GlobalExceptionHandler {
         );
 
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Validation failed");
+        response.put(MSG, "Validation failed");
         response.put("errors", errors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
@@ -63,14 +64,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
     public ResponseEntity<Object> handleParameterExceptions(Exception ex) {
         Map<String, String> map = new HashMap<>();
-        map.put("message", "Invalid request parameter: " + ex.getMessage());
+        map.put(MSG, "Invalid request parameter: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(map);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGenericException(Exception ex) {
         Map<String, String> map = new HashMap<>();
-        map.put("message", "An unexpected error occurred: " + ex.getMessage());
+        map.put(MSG, "An unexpected error occurred: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(map);
     }
 }

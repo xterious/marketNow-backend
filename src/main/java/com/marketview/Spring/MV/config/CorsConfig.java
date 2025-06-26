@@ -12,7 +12,6 @@ import org.springframework.web.servlet.config.annotation.*;
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
                     .allowCredentials(true); // In case you use cookie
-            // }
         }
     }
 
