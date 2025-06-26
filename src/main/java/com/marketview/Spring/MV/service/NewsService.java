@@ -3,6 +3,8 @@ package com.marketview.Spring.MV.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketview.Spring.MV.model.News;
+import com.marketview.Spring.MV.model.NewsCategory;
+import com.marketview.Spring.MV.repository.NewsCategoryRepository;
 import com.marketview.Spring.MV.repository.NewsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -25,6 +26,8 @@ public class NewsService {
     private final NewsRepository newsRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private NewsCategoryRepository newsCategoryRepository;
+
 
     @Value("${finnhub.api.key}")
     private String finnhubApiKey;
@@ -65,9 +68,17 @@ public class NewsService {
     }
 
     private void fetchAndStoreNews(String category) {
-        String url = "https://finnhub.io/api/v1/news?category=" + (category != null ? category : "") + "&token=" + finnhubApiKey;
+        String url = "https://finnhub.io/api/v1/news"
+                + (category != null && !category.isEmpty() ? "?category=" + category : "")
+                + "&token=" + finnhubApiKey;
+
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                logger.warn("Failed to fetch news: HTTP {}", response.getStatusCode());
+                return;
+            }
+
             JsonNode jsonArray = objectMapper.readTree(response.getBody());
             if (jsonArray.isArray()) {
                 for (JsonNode node : jsonArray) {
@@ -75,11 +86,30 @@ public class NewsService {
                     String headline = node.has("headline") ? node.get("headline").asText() : "No headline";
                     String summary = node.has("summary") ? node.get("summary").asText() : "";
                     String urlField = node.has("url") ? node.get("url").asText() : "";
-                    newsRepository.save(new News(cat, headline, summary, urlField));
+                    String source = node.has("source") ? node.get("source").asText() : "";
+                    String image = node.has("image") ? node.get("image").asText() : "";
+                    long datetime = node.has("datetime") ? node.get("datetime").asLong() : System.currentTimeMillis();
+
+                    // Store category if new
+                    newsCategoryRepository.findByCategory(cat)
+                            .orElseGet(() -> newsCategoryRepository.save(new NewsCategory(null, cat)));
+
+                    // Only save to MongoDB if you want to persist all news
+                    News news = new News(
+                            null,        // id (let MongoDB generate)
+                            cat,
+                            datetime,
+                            headline,
+                            image,
+                            source,
+                            summary,
+                            urlField
+                    );
+                    newsRepository.save(news);
                 }
             }
         } catch (Exception e) {
-            logger.error("Error fetching news: {}", e.getMessage());
+            logger.error("Error fetching news from Finnhub: {}", e.getMessage(), e);
         }
     }
 }

@@ -31,9 +31,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // Extract user info from OAuth2User
         String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
 
-        // Check if user exists in DB
+        // Check if a user exists in DB
         Optional<User> userOptional = userRepository.findByEmail(email);
         User user;
         if (userOptional.isPresent()) {

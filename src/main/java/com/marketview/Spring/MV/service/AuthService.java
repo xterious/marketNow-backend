@@ -58,7 +58,7 @@ public class AuthService {
         if (registerRequest.getPassword() == null || registerRequest.getPassword().trim().isEmpty()) {
             throw new CustomException("Password cannot be empty", HttpStatus.BAD_REQUEST);
         }
-        // Check if username is already taken
+        // Check if the username is already taken
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             throw new CustomException("Username is already taken", HttpStatus.CONFLICT);
         }
@@ -68,7 +68,7 @@ public class AuthService {
             throw new CustomException("Email is already in use", HttpStatus.CONFLICT);
         }
 
-        // Create new user
+        // Create a new user
         User user = User.builder()
                 .username(registerRequest.getUsername())
                 .email(registerRequest.getEmail())
