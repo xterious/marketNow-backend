@@ -55,13 +55,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults()) // Integrates with CorsConfig
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/api/auth/**", "/oauth2/**", "/public/**").permitAll() // Public endpoints
-                        .requestMatchers("/api/stocks/**", "/api/news/**", "/ws/**").authenticated() // Secure all API and WebSocket routes
+                        .requestMatchers("/", "/api/auth/**", "/oauth2/**", "/public/**").permitAll()
+                        .requestMatchers("/api/stocks/**", "/api/news/**", "/ws/**", "/api/currency/**").authenticated() // Updated to include /api/currency/**
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
