@@ -37,12 +37,22 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+// In your JwtFilter class, add this check at the beginning of doFilterInternal method:
 
+@Override
+protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
+                               FilterChain filterChain) throws ServletException, IOException {
+    
+    // Skip JWT processing for WebSocket related requests
+    String requestPath = request.getRequestURI();
+    if (requestPath.startsWith("/ws")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
+    
+    // Your existing JWT filter logic continues here...
+    // ... rest of your JWT filter code
+    
         // Skip auth for permitted endpoints
         String requestURI = request.getRequestURI();
         if (shouldSkipAuthCheck(requestURI)) {
@@ -123,4 +133,3 @@ public class JwtFilter extends OncePerRequestFilter {
                uri.equals("/");
     }
 }
-

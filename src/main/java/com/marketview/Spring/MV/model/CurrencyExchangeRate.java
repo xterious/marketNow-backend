@@ -12,6 +12,8 @@ public class CurrencyExchangeRate implements Serializable {
     private BigDecimal rate;
     private BigDecimal finalRate;
     private String customerType;
+    private long lastUpdated;
+
 
     public CurrencyExchangeRate(String base, String target, BigDecimal rate, String customerType) {
         this.base = base;
@@ -19,6 +21,7 @@ public class CurrencyExchangeRate implements Serializable {
         this.rate = rate;
         this.customerType = customerType;
         this.finalRate = calculateFinalRate(rate, customerType);
+        this.lastUpdated = System.currentTimeMillis(); // Set timestamp
     }
 
     private BigDecimal calculateFinalRate(BigDecimal baseRate, String customerType) {

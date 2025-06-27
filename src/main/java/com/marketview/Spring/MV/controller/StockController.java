@@ -3,7 +3,6 @@ package com.marketview.Spring.MV.controller;
 import com.marketview.Spring.MV.model.Stock;
 import com.marketview.Spring.MV.service.StockService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +33,8 @@ public class StockController {
 
     @GetMapping("/quote")
     public CompletableFuture<Stock> getStockQuote(@RequestParam String symbol) {
-        return stockService.getStockQuote(symbol);
+        Stock stock = stockService.getStockQuote(symbol);
+        return CompletableFuture.completedFuture(stock);
     }
 
 

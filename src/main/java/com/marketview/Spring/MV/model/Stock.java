@@ -21,6 +21,7 @@ public class Stock implements Serializable {
     private String figi;
     private String mic;
     private String type;
+    private String exchange;
     private Double currentPrice; // Maps to /quote's "c"
     private Double change; // Maps to /quote's "d"
     private Double percentChange; // Maps to /quote's "dp"
@@ -37,5 +38,15 @@ public class Stock implements Serializable {
         this.displaySymbol = symbol2;
         this.figi = commonStock;
         this.currentPrice = currentPrice;
+    }
+
+    public Stock(String symbol, String currency, String description, String displaySymbol, Object figi, Object mic, String type, Double currentPrice, String exchange, Object change, Object percentChange, Object high, Object low, Object previousClose) {
+        this.symbol = symbol;
+        this.currency = currency;
+        this.description = description;
+        this.displaySymbol = displaySymbol;
+        this.figi = type;
+        this.currentPrice = currentPrice;
+        this.exchange = exchange;
     }
 }
