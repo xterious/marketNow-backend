@@ -3,12 +3,9 @@ package com.marketview.Spring.MV.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketview.Spring.MV.model.Stock;
-import com.marketview.Spring.MV.model.UserWishlist;
-import com.marketview.Spring.MV.repository.UserWishlistRepository;
 import com.marketview.Spring.MV.util.CustomException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CachePut;
@@ -30,17 +27,14 @@ public class StockService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final UserWishlistRepository wishlistRepository;
 
     @Value("${finnhub.api.key}")
     private String finnhubApiKey;
 
     public StockService(RestTemplate restTemplate,
-                        ObjectMapper objectMapper,
-                        UserWishlistRepository wishlistRepository) {
+                        ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
-        this.wishlistRepository = wishlistRepository;
     }
 
     @Cacheable(value = "stockSymbols", key = "#exchange")
@@ -95,32 +89,4 @@ public class StockService {
         logger.info("Cleared cache for symbol: {}", symbol);
     }
 
-    public UserWishlist getWishlist(String username) {
-        return wishlistRepository.findByUsername(username)
-                .orElse(new UserWishlist(username, Set.of(), Set.of(), Set.of()));
-    }
-
-    public UserWishlist addToWishlist(String username, String item, String type) {
-        UserWishlist wishlist = getWishlist(username);
-        Set<String> items = switch (type.toLowerCase()) {
-            case "stock" -> wishlist.getFavoriteStocks();
-            case "currency" -> wishlist.getFavoriteCurrencies();
-            case "news" -> wishlist.getFavoriteNews();
-            default -> throw new CustomException("Invalid type: " + type, org.springframework.http.HttpStatus.BAD_REQUEST);
-        };
-        items.add(item);
-        return wishlistRepository.save(wishlist);
-    }
-
-    public UserWishlist removeFromWishlist(String username, String item, String type) {
-        UserWishlist wishlist = getWishlist(username);
-        Set<String> items = switch (type.toLowerCase()) {
-            case "stock" -> wishlist.getFavoriteStocks();
-            case "currency" -> wishlist.getFavoriteCurrencies();
-            case "news" -> wishlist.getFavoriteNews();
-            default -> throw new CustomException("Invalid type: " + type, org.springframework.http.HttpStatus.BAD_REQUEST);
-        };
-        items.remove(item);
-        return wishlistRepository.save(wishlist);
-    }
 }

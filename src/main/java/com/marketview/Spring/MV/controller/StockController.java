@@ -1,7 +1,6 @@
 package com.marketview.Spring.MV.controller;
 
 import com.marketview.Spring.MV.model.Stock;
-import com.marketview.Spring.MV.model.UserWishlist;
 import com.marketview.Spring.MV.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,23 +37,6 @@ public class StockController {
         return stockService.getStockQuote(symbol);
     }
 
-    @PostMapping("/wishlist/{type}/{item}")
-    public ResponseEntity<UserWishlist> addToWishlist(@PathVariable String type, @PathVariable String item) {
-        // Authentication check should be handled by SecurityConfig
-        String username = "TODO: Get from Authentication principal"; // Replace with actual logic
-        UserWishlist updatedWishlist = stockService.addToWishlist(username, item, type);
-        messagingTemplate.convertAndSend("/topic/wishlist/" + username, updatedWishlist);
-        return ResponseEntity.ok(updatedWishlist);
-    }
-
-    @DeleteMapping("/wishlist/{type}/{item}")
-    public ResponseEntity<UserWishlist> removeFromWishlist(@PathVariable String type, @PathVariable String item) {
-        // Authentication check should be handled by SecurityConfig
-        String username = "TODO: Get from Authentication principal"; // Replace with actual logic
-        UserWishlist updatedWishlist = stockService.removeFromWishlist(username, item, type);
-        messagingTemplate.convertAndSend("/topic/wishlist/" + username, updatedWishlist);
-        return ResponseEntity.ok(updatedWishlist);
-    }
 
     // Removed @MessageMapping("/wishlist/update/{username}") to avoid conflict
 }

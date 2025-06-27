@@ -2,7 +2,6 @@ package com.marketview.Spring.MV.controller;
 
 import com.marketview.Spring.MV.dto.UserDTO;
 import com.marketview.Spring.MV.model.User;
-import com.marketview.Spring.MV.model.UserWishlist;
 import com.marketview.Spring.MV.service.StockService;
 import com.marketview.Spring.MV.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -60,31 +59,5 @@ public class UserController {
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
-    }
-
-    @PostMapping("/wishlist/{type}/{item}")
-    public ResponseEntity<UserWishlist> addToWishlist(Authentication authentication,
-                                                      @PathVariable String type,
-                                                      @PathVariable String item) {
-        if (authentication == null) {
-            return ResponseEntity.status(401).build();
-        }
-        String username = authentication.getName();
-        UserWishlist updatedWishlist = stockService.addToWishlist(username, item, type);
-        messagingTemplate.convertAndSend("/topic/wishlist/" + username, updatedWishlist);
-        return ResponseEntity.ok(updatedWishlist);
-    }
-
-    @DeleteMapping("/wishlist/{type}/{item}")
-    public ResponseEntity<UserWishlist> removeFromWishlist(Authentication authentication,
-                                                           @PathVariable String type,
-                                                           @PathVariable String item) {
-        if (authentication == null) {
-            return ResponseEntity.status(401).build();
-        }
-        String username = authentication.getName();
-        UserWishlist updatedWishlist = stockService.removeFromWishlist(username, item, type);
-        messagingTemplate.convertAndSend("/topic/wishlist/" + username, updatedWishlist);
-        return ResponseEntity.ok(updatedWishlist);
     }
 }
