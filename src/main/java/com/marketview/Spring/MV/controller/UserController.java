@@ -1,11 +1,10 @@
 package com.marketview.Spring.MV.controller;
 
+import com.marketview.Spring.MV.dto.UserDTO;
 import com.marketview.Spring.MV.model.User;
 import com.marketview.Spring.MV.model.UserWishlist;
 import com.marketview.Spring.MV.service.StockService;
 import com.marketview.Spring.MV.service.UserService;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -24,15 +23,16 @@ public class UserController {
     private final SimpMessagingTemplate messagingTemplate; // For WebSocket updates
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<UserDTO> getCurrentUser(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
             return ResponseEntity.status(401).body(null);
         }
         String username = authentication.getName(); // Get username from OAuth2/JWT
         User user = userService.findByUsername(username);
-        UserWishlist wishlist = stockService.getWishlist(username);
         if (user != null) {
-            return ResponseEntity.ok(new UserResponse(user.getId(), user.getUsername(), wishlist));
+            return ResponseEntity.ok(new UserDTO(
+                    user.getUsername(),user.getEmail(),user.getFirstName(),user.getLastName()
+            ));
         }
         return ResponseEntity.status(404).body(null);
     }
@@ -48,13 +48,13 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public User createUser(@RequestBody UserDTO userDTO) {
+        return userService.createUser(userDTO);
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable String id, @RequestBody User user) {
-        return userService.updateUser(id, user);
+    public User updateUser(@PathVariable String id, @RequestBody UserDTO userDTO) {
+        return userService.updateUser(id, userDTO);
     }
 
     @DeleteMapping("/{id}")
@@ -86,20 +86,5 @@ public class UserController {
         UserWishlist updatedWishlist = stockService.removeFromWishlist(username, item, type);
         messagingTemplate.convertAndSend("/topic/wishlist/" + username, updatedWishlist);
         return ResponseEntity.ok(updatedWishlist);
-    }
-}
-
-// Response DTO with Lombok annotations
-@Data
-@NoArgsConstructor
-class UserResponse {
-    private String id;
-    private String username;
-    private UserWishlist wishlist;
-
-    public UserResponse(String id, String username, UserWishlist wishlist) {
-        this.id = id;
-        this.username = username;
-        this.wishlist = wishlist;
     }
 }

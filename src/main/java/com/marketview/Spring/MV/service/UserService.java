@@ -1,5 +1,6 @@
 package com.marketview.Spring.MV.service;
 
+import com.marketview.Spring.MV.dto.UserDTO;
 import com.marketview.Spring.MV.model.User;
 import com.marketview.Spring.MV.repository.UserRepository;
 import com.marketview.Spring.MV.util.CustomException;
@@ -28,11 +29,16 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public User createUser(User user) {
-        return userRepository.save(user);
+    public User createUser(UserDTO user) {
+        User newUser = new User();
+        newUser.setUsername(user.getUsername());
+        newUser.setEmail(user.getEmail());
+        newUser.setFirstName(user.getFirstName());
+        newUser.setLastName(user.getLastName());
+        return userRepository.save(newUser);
     }
 
-    public User updateUser(String id, User userDetails) {
+    public User updateUser(String id, UserDTO userDetails) {
         User user = getUserById(id);
         user.setUsername(userDetails.getUsername());
         user.setEmail(userDetails.getEmail());

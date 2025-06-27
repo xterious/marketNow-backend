@@ -3,7 +3,6 @@ package com.marketview.Spring.MV.service;
 import com.marketview.Spring.MV.model.Market;
 import com.marketview.Spring.MV.repository.MarketRepository;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
