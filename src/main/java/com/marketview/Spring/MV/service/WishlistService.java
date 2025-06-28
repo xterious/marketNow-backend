@@ -140,7 +140,7 @@ public class WishlistService {
                 .collect(Collectors.toList());
     }
 
-    // Helper method to check if news is in wishlist
+    // Helper method to check if news is in the wishlist
     private boolean isNewsInWishlist(News news, Set<String> wishlistedNewsIds) {
         String newsId = news.getNewsId();
         String newsUrl = news.getUrl();
