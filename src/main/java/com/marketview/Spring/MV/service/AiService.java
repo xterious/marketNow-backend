@@ -50,7 +50,7 @@ public class AiService {
 
     public String answerQuestion(String question) {
         String prompt = """
-            You are a financial analyst for MarketNow. 
+            You are a financial analyst for MarketNow.
             Provide concise, accurate responses based on available market data.
             
             User Question: %s
@@ -65,7 +65,7 @@ public class AiService {
 
     private String callOpenAiApi(String prompt) {
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "gpt-4.1-nano"); // Adjust model name based on API docs
+        requestBody.put("model", "gpt-4.1-nano");
         requestBody.put("messages", List.of(Map.of("role", "user", "content", prompt)));
         requestBody.put("max_tokens", 150); // Limit response length
 
