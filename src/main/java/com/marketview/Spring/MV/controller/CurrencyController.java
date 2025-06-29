@@ -29,20 +29,23 @@ public class CurrencyController {
         String normalizedBase = base.toUpperCase();
         String normalizedTarget = target.toUpperCase();
         String normalizedCustomerType = customerType.toLowerCase();
+        String id = String.format("%s-%s-%s", normalizedBase, normalizedTarget, normalizedCustomerType);
 
         try {
-            if (!"normal".equalsIgnoreCase(customerType) && !"special".equalsIgnoreCase(customerType)) {
+            if (!"normal".equalsIgnoreCase(normalizedCustomerType) && !"special".equalsIgnoreCase(normalizedCustomerType)) {
+                logger.warn("Invalid customer type: {} for ID: {}", normalizedCustomerType, id);
                 return ResponseEntity.badRequest().body(null);
             }
 
             if (!currencyService.isValidCurrencyPair(normalizedBase, normalizedTarget)) {
+                logger.warn("Invalid currency pair: {}/{} for ID: {}", normalizedBase, normalizedTarget, id);
                 return ResponseEntity.notFound().build();
             }
 
             CurrencyExchangeRate rate = currencyService.getExchangeRate(normalizedBase, normalizedTarget, normalizedCustomerType);
             return ResponseEntity.ok(rate);
         } catch (Exception e) {
-            logger.error("Error processing exchange rate request for {}/{} ({}): {}", normalizedBase, normalizedTarget, normalizedCustomerType, e.getMessage(), e);
+            logger.error("Error processing exchange rate request for ID {}: {}", id, e.getMessage(), e);
             return ResponseEntity.internalServerError().body(null);
         }
     }
@@ -56,20 +59,23 @@ public class CurrencyController {
         String normalizedBase = base.toUpperCase();
         String normalizedTarget = target.toUpperCase();
         String normalizedCustomerType = customerType.toLowerCase();
+        String id = String.format("%s-%s-%s", normalizedBase, normalizedTarget, normalizedCustomerType);
 
         try {
-            if (!"normal".equalsIgnoreCase(customerType) && !"special".equalsIgnoreCase(customerType)) {
+            if (!"normal".equalsIgnoreCase(normalizedCustomerType) && !"special".equalsIgnoreCase(normalizedCustomerType)) {
+                logger.warn("Invalid customer type: {} for ID: {}", normalizedCustomerType, id);
                 return ResponseEntity.badRequest().body(null);
             }
 
             if (!currencyService.isValidCurrencyPair(normalizedBase, normalizedTarget)) {
+                logger.warn("Invalid currency pair: {}/{} for ID: {}", normalizedBase, normalizedTarget, id);
                 return ResponseEntity.notFound().build();
             }
 
             BigDecimal convertedAmount = currencyService.convertCurrency(normalizedBase, normalizedTarget, amount, normalizedCustomerType);
             return ResponseEntity.ok(convertedAmount);
         } catch (Exception e) {
-            logger.error("Error processing currency conversion request for {}/{} ({}): {}", normalizedBase, normalizedTarget, normalizedCustomerType, e.getMessage(), e);
+            logger.error("Error processing currency conversion request for ID {}: {}", id, e.getMessage(), e);
             return ResponseEntity.internalServerError().body(null);
         }
     }
