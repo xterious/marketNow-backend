@@ -1,4 +1,4 @@
-package com.marketview.Spring.MV.dto;
+package com.market_view.spring.mv.dto;
 
 import java.math.BigDecimal;
 

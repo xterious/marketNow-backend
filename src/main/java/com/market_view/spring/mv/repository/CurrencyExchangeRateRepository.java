@@ -15,6 +15,8 @@ public interface CurrencyExchangeRateRepository extends MongoRepository<Currency
 
     Optional<CurrencyExchangeRate> findByBaseAndTarget(String base, String target);
 
+    Optional<CurrencyExchangeRate> findByBaseAndTargetAndCustomerType(String base, String target, String customerType);
+
     List<CurrencyExchangeRate> findByBase(String base);
 
     List<CurrencyExchangeRate> findByTarget(String target);

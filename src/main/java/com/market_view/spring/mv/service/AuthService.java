@@ -84,7 +84,6 @@ public class AuthService {
                 .orElseGet(() -> roleRepository.save(
                         Role.builder()
                                 .name(Role.ROLE_USER)
-                                .description("Default role for regular users")
                                 .build()));
         roles.add(userRole);
         user.setRoles(roles);

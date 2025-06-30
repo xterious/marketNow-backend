@@ -1,12 +1,12 @@
-package com.marketview.Spring.MV.service;
+package com.market_view.spring.mv.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketview.Spring.MV.model.CurrencyExchangeRate;
-import com.marketview.Spring.MV.model.LiborRate;
-import com.marketview.Spring.MV.repository.CurrencyExchangeRateRepository;
-import com.marketview.Spring.MV.repository.CurrencyRepository;
-import com.marketview.Spring.MV.repository.LiborRateRepository;
+import com.market_view.spring.mv.model.CurrencyExchangeRate;
+import com.market_view.spring.mv.model.LiborRate;
+import com.market_view.spring.mv.repository.CurrencyExchangeRateRepository;
+import com.market_view.spring.mv.repository.CurrencyRepository;
+import com.market_view.spring.mv.repository.LiborRateRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;

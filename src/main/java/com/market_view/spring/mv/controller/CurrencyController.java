@@ -1,8 +1,8 @@
-package com.marketview.Spring.MV.controller;
+package com.market_view.spring.mv.controller;
 
-import com.marketview.Spring.MV.model.CurrencyExchangeRate;
-import com.marketview.Spring.MV.repository.CurrencyRepository;
-import com.marketview.Spring.MV.service.CurrencyService;
+import com.market_view.spring.mv.model.CurrencyExchangeRate;
+import com.market_view.spring.mv.repository.CurrencyRepository;
+import com.market_view.spring.mv.service.CurrencyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

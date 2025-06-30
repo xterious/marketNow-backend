@@ -44,7 +44,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .orElseGet(() -> {
                         Role newRole = new Role();
                         newRole.setName("ROLE_USER");
-                        newRole.setDescription("Default user role");
                         return roleRepository.save(newRole);
                     });
 

@@ -1,8 +1,8 @@
 package com.market_view.spring.mv.controller;
 
-import com.marketview.Spring.MV.dto.LiborRateRequest;
-import com.marketview.Spring.MV.model.LiborRate;
-import com.marketview.Spring.MV.repository.LiborRateRepository;
+import com.market_view.spring.mv.model.LiborRate;
+import com.market_view.spring.mv.repository.LiborRateRepository;
+import com.market_view.spring.mv.dto.LiborRateRequest;
 import lombok.Data;
 import com.market_view.spring.mv.model.User;
 import com.market_view.spring.mv.repository.UserRepository;
@@ -27,9 +27,10 @@ public class AdminController {
     private final CurrencyService currencyService;
     private final LiborRateRepository liborRateRepository;
 
-    public AdminController(UserRepository userRepository, CurrencyService currencyService) {
+    public AdminController(UserRepository userRepository, CurrencyService currencyService, LiborRateRepository liborRateRepository) {
         this.userRepository = userRepository;
         this.currencyService = currencyService;
+        this.liborRateRepository = liborRateRepository;
     }
 
     // CRUD Operations for Users

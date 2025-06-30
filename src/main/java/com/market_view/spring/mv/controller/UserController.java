@@ -1,8 +1,8 @@
-package com.marketview.Spring.MV.controller;
+package com.market_view.spring.mv.controller;
 
-import com.marketview.Spring.MV.dto.UserDTO;
-import com.marketview.Spring.MV.model.User;
-import com.marketview.Spring.MV.service.UserService;
+import com.market_view.spring.mv.dto.UserDTO;
+import com.market_view.spring.mv.model.User;
+import com.market_view.spring.mv.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
