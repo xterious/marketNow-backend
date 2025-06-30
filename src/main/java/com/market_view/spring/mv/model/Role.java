@@ -1,6 +1,5 @@
 package com.market_view.spring.mv.model;
 
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,17 +15,8 @@ import lombok.NoArgsConstructor;
 @Document(collection = "roles")
 public class Role {
 
-    @Id
-    private String id;
-
     @Indexed(unique = true)
     private String name; // ROLE_USER, ROLE_ADMIN, etc.
-
-    private String description;
-
-    public Role(String name) {
-        this.name = name;
-    }
 
 
     public static final String ROLE_USER = "ROLE_USER";
