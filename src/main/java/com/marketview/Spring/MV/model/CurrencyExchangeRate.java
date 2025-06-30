@@ -1,6 +1,8 @@
 package com.marketview.Spring.MV.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
@@ -8,17 +10,19 @@ import java.math.RoundingMode;
 import java.time.Instant;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Document(collection = "currencyExchangeRate")
 public class CurrencyExchangeRate {
 
     @Indexed(unique = true)
-    private String id; // Unique identifier: base-target-customerType
+    private String id; // e.g. "EUR-USD-retail"
     private String base;
     private String target;
-    private BigDecimal rate; // Base rate from API
-    private BigDecimal finalRate; // Rate after LIBOR adjustment
+    private BigDecimal rate;
+    private BigDecimal finalRate;
     private String customerType;
-    private long lastUpdated; // Timestamp for when the rate was last updated
+    private long lastUpdated;
 
     public CurrencyExchangeRate(String base, String target, BigDecimal rate, BigDecimal finalRate, String customerType) {
         this.base = base.toUpperCase();
@@ -31,19 +35,10 @@ public class CurrencyExchangeRate {
     }
 
     private static String generateId(String base, String target, String customerType) {
-        return String.format("%s-%s-%s", base.toUpperCase(), target.toUpperCase(), customerType.toLowerCase());
-    }
-
-    @Override
-    public String toString() {
-        return "CurrencyExchangeRate{" +
-                "id='" + id + '\'' +
-                ", base='" + base + '\'' +
-                ", target='" + target + '\'' +
-                ", rate=" + rate +
-                ", finalRate=" + finalRate +
-                ", customerType='" + customerType + '\'' +
-                ", lastUpdated=" + lastUpdated +
-                '}';
+        return String.format("%s-%s-%s",
+                base.toUpperCase(),
+                target.toUpperCase(),
+                customerType.toLowerCase()
+        );
     }
 }

@@ -3,179 +3,239 @@ package com.marketview.Spring.MV.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketview.Spring.MV.model.CurrencyExchangeRate;
+import com.marketview.Spring.MV.model.LiborRate;
 import com.marketview.Spring.MV.repository.CurrencyExchangeRateRepository;
-import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.marketview.Spring.MV.repository.CurrencyRepository;
+import com.marketview.Spring.MV.repository.LiborRateRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class CurrencyService {
-
-    private static final Logger logger = LoggerFactory.getLogger(CurrencyService.class);
-    private static final Set<String> SUPPORTED_CURRENCIES = Set.of("USD", "EUR", "GBP", "JPY", "CAD", "INR");
-
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-    private final CurrencyExchangeRateRepository currencyExchangeRateRepository;
 
     @Value("${fixer.api.key}")
     private String fixerApiKey;
 
-    // LIBOR Management Methods
-    @Getter
-    private BigDecimal liborSpreadNormal = new BigDecimal("0.005"); // Default 0.5%
-    @Getter
-    private BigDecimal liborSpreadSpecial = new BigDecimal("0.002"); // Default 0.2%
+    @Value("${fixer.api.symbols.url}")
+    private String fixerSymbolsUrl;
 
-    public CurrencyService(RestTemplate restTemplate, ObjectMapper objectMapper,
-                           CurrencyExchangeRateRepository currencyExchangeRateRepository) {
+    @Value("${fixer.api.latest.url}")
+    private String fixerLatestUrl;
+
+    private static final long REDIS_TTL_SECONDS = 60 * 60; // 1 hour
+
+    private final CurrencyExchangeRateRepository currencyExchangeRateRepository;
+    private final CurrencyRepository currencyRepository;
+    private final LiborRateRepository liborRateRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+
+    public CurrencyService(
+            CurrencyExchangeRateRepository currencyExchangeRateRepository,
+            CurrencyRepository currencyRepository,
+            LiborRateRepository liborRateRepository,
+            RedisTemplate<String, Object> redisTemplate,
+            RestTemplate restTemplate,
+            ObjectMapper objectMapper
+    ) {
+        this.currencyExchangeRateRepository = currencyExchangeRateRepository;
+        this.currencyRepository = currencyRepository;
+        this.liborRateRepository = liborRateRepository;
+        this.redisTemplate = redisTemplate;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
-        this.currencyExchangeRateRepository = currencyExchangeRateRepository;
     }
 
-    @Cacheable(value = "currencyRates", key = "#base + '-' + #target + '-' + #customerType", unless = "#result == null")
-    public CurrencyExchangeRate getExchangeRate(String base, String target, String customerType) {
-        String normalizedBase = base.toUpperCase();
-        String normalizedTarget = target.toUpperCase();
-        String normalizedCustomerType = customerType.toLowerCase();
-        String id = generateId(normalizedBase, normalizedTarget, normalizedCustomerType);
-        logger.info("Checking cache for ID: {}", id);
-        Optional<CurrencyExchangeRate> existingRate = currencyExchangeRateRepository.findById(id);
-        if (existingRate.isPresent()) {
-            logger.info("Found exchange rate in database for ID: {}", id);
-            return existingRate.get();
-        }
-        logger.info("Fetching from API for ID: {}", id);
+    public void loadRates() {
+        String url = fixerLatestUrl + "?access_key=" + fixerApiKey;
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
         try {
-            CurrencyExchangeRate newRate = fetchExchangeRateFromAPI(normalizedBase, normalizedTarget, normalizedCustomerType);
-            if (newRate != null) {
-                currencyExchangeRateRepository.save(newRate);
-                logger.info("Saved new rate to database for ID: {}", id);
+            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            boolean success = jsonNode.get("success").asBoolean();
+
+            if (!success) {
+                log.error("Failed to load latest rates from Fixer.io");
+                return;
             }
-            return newRate;
-        } catch (Exception e) {
-            logger.error("Failed to fetch or save exchange rate for ID {}: {}", id, e.getMessage(), e);
-            clearCacheForKey(base, target, customerType);
-            throw new RuntimeException("Failed to process exchange rate", e);
+
+            String base = jsonNode.get("base").asText();
+            JsonNode ratesNode = jsonNode.get("rates");
+
+            Iterator<Map.Entry<String, JsonNode>> fields = ratesNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String target = entry.getKey();
+                BigDecimal rate = entry.getValue().decimalValue();
+
+                saveRate(base, target, rate, "normal");
+                saveRate(base, target, rate, "special");
+            }
+
+            log.info("Rates loaded and saved successfully for {} currencies.", ratesNode.size());
+
+        } catch (Exception ex) {
+            log.error("Error parsing latest rates from Fixer.io", ex);
         }
+    }
+
+    private void saveRate(String base, String target, BigDecimal rate, String customerType) {
+        BigDecimal finalRate = calculateFinalRate(rate, customerType);
+        CurrencyExchangeRate exchangeRate = new CurrencyExchangeRate(
+                base, target, rate, finalRate, customerType
+        );
+
+        currencyExchangeRateRepository.save(exchangeRate);
+
+        String redisKey = exchangeRate.getId();
+        redisTemplate.opsForValue().set(redisKey, exchangeRate, REDIS_TTL_SECONDS, TimeUnit.SECONDS);
+    }
+    public Map<String, String> getAvailableSymbols() {
+        String url = fixerSymbolsUrl + "?access_key=" + fixerApiKey;
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+        try {
+            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            boolean success = jsonNode.get("success").asBoolean();
+
+            if (!success) {
+                log.error("Failed to load symbols from Fixer.io");
+                return Collections.emptyMap();
+            }
+
+            JsonNode symbolsNode = jsonNode.get("symbols");
+            Map<String, String> symbols = new HashMap<>();
+            symbolsNode.fields().forEachRemaining(entry -> {
+                symbols.put(entry.getKey(), entry.getValue().asText());
+            });
+            return symbols;
+
+        } catch (Exception ex) {
+            log.error("Error parsing symbols from Fixer.io", ex);
+            return Collections.emptyMap();
+        }
+    }
+
+    private BigDecimal fetchRateFromApi(String base, String target) {
+        String url = fixerLatestUrl
+                + "?access_key=" + fixerApiKey
+                + "&base=" + base
+                + "&symbols=" + target;
+
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            JsonNode root = objectMapper.readTree(response.getBody());
+
+            boolean success = root.path("success").asBoolean();
+            if (!success) {
+                log.error("Fixer API returned error: {}", response.getBody());
+                return null;
+            }
+
+            JsonNode ratesNode = root.path("rates");
+            if (ratesNode.has(target)) {
+                return ratesNode.get(target).decimalValue();
+            } else {
+                log.warn("Target currency {} not found in Fixer API response.", target);
+                return null;
+            }
+        } catch (Exception ex) {
+            log.error("Error fetching rate from Fixer API", ex);
+            return null;
+        }
+    }
+
+
+
+    public CurrencyExchangeRate getExchangeRate(String base, String target, String customerType) {
+        String key = generateId(base, target, customerType);
+        ValueOperations<String, Object> ops = redisTemplate.opsForValue();
+
+        // STEP 1 — Try Redis
+        Object cachedObject = ops.get(key);
+        if (cachedObject != null) {
+            CurrencyExchangeRate cached = objectMapper.convertValue(
+                    cachedObject,
+                    CurrencyExchangeRate.class
+            );
+            log.info("Returning exchange rate from Redis for key {}", key);
+            return cached;
+        }
+
+        log.info("Cache miss for {}. Trying Fixer API.", key);
+
+        // STEP 2 — Try fetching live from Fixer
+        BigDecimal freshRate = fetchRateFromApi(base, target);
+        if (freshRate != null) {
+            BigDecimal finalRate = calculateFinalRate(freshRate, customerType);
+            CurrencyExchangeRate updated = new CurrencyExchangeRate(
+                    base, target, freshRate, finalRate, customerType
+            );
+
+            // Save/update in DB
+            currencyExchangeRateRepository.save(updated);
+
+            // Save in Redis
+            ops.set(key, updated, REDIS_TTL_SECONDS, TimeUnit.SECONDS);
+
+            log.info("Fetched fresh rate from Fixer and updated DB + Redis for key {}", key);
+            return updated;
+        }
+
+        log.warn("Fixer API failed. Falling back to DB for key {}", key);
+
+        // STEP 3 — Fallback to MongoDB
+        Optional<CurrencyExchangeRate> fromDb = currencyExchangeRateRepository.findById(key);
+        if (fromDb.isPresent()) {
+            CurrencyExchangeRate dbRate = fromDb.get();
+            ops.set(key, dbRate, REDIS_TTL_SECONDS, TimeUnit.SECONDS);
+            log.info("Returning rate from DB fallback for key {}", key);
+            return dbRate;
+        }
+
+        log.error("No exchange rate found even after Redis, Fixer, and DB for key {}", key);
+        throw new RuntimeException("Rate not found for pair " + base + "/" + target);
     }
 
     public BigDecimal convertCurrency(String base, String target, BigDecimal amount, String customerType) {
         CurrencyExchangeRate rate = getExchangeRate(base, target, customerType);
-        if (rate == null || rate.getFinalRate() == null) {
-            String id = generateId(base.toUpperCase(), target.toUpperCase(), customerType.toLowerCase());
-            throw new IllegalStateException("Exchange rate not available for " + id + ". Please try again later.");
+        if (rate == null) {
+            throw new RuntimeException("Rate not found for pair " + base + "/" + target);
         }
-        return amount.multiply(rate.getFinalRate()).setScale(4, RoundingMode.HALF_UP);
+        return amount.multiply(rate.getFinalRate()).setScale(6, RoundingMode.HALF_UP);
     }
 
-    public boolean isValidCurrencyPair(String base, String target) {
-        String normalizedBase = base.toUpperCase();
-        String normalizedTarget = target.toUpperCase();
-        if (!SUPPORTED_CURRENCIES.contains(normalizedBase) || !SUPPORTED_CURRENCIES.contains(normalizedTarget)) {
-            logger.warn("Unsupported currency pair: {}/{}", normalizedBase, normalizedTarget);
-            return false;
-        }
-        try {
-            CurrencyExchangeRate rate = fetchExchangeRateFromAPI(normalizedBase, normalizedTarget, "standard");
-            return rate != null && rate.getRate() != null;
-        } catch (Exception e) {
-            logger.warn("Validation failed for {}/{}: {}", normalizedBase, normalizedTarget, e.getMessage());
-            return false;
-        }
+    private BigDecimal calculateFinalRate(BigDecimal rate, String customerType) {
+        BigDecimal liborSpread = getLiborSpread(customerType);
+        return rate.multiply(BigDecimal.ONE.add(liborSpread))
+                .setScale(6, RoundingMode.HALF_UP);
     }
 
-    @Transactional
-    public void setLiborSpreadNormal(BigDecimal newSpread) {
-        if (newSpread.compareTo(BigDecimal.ZERO) < 0) throw new IllegalArgumentException("LIBOR spread cannot be negative");
-        liborSpreadNormal = newSpread.setScale(6, RoundingMode.HALF_UP);
-        logger.info("Updated LIBOR spread for normal customers to {}", liborSpreadNormal);
-        clearAllCurrencyCache();
+    private BigDecimal getLiborSpread(String customerType) {
+        LiborRate liborRate = liborRateRepository.findById("LIBOR")
+                .orElseGet(LiborRate::new);
+        return "special".equalsIgnoreCase(customerType)
+                ? liborRate.getSpecialRate()
+                : liborRate.getNormalRate();
     }
 
-    @Transactional
-    public void setLiborSpreadSpecial(BigDecimal newSpread) {
-        if (newSpread.compareTo(BigDecimal.ZERO) < 0) throw new IllegalArgumentException("LIBOR spread cannot be negative");
-        liborSpreadSpecial = newSpread.setScale(6, RoundingMode.HALF_UP);
-        logger.info("Updated LIBOR spread for special customers to {}", liborSpreadSpecial);
-        clearAllCurrencyCache();
-    }
-
-    private BigDecimal calculateLiborSpread(String customerType) {
-        return "special".equalsIgnoreCase(customerType) ? liborSpreadSpecial : liborSpreadNormal;
-    }
-
-    private CurrencyExchangeRate fetchExchangeRateFromAPI(String base, String target, String customerType) {
-        if (!SUPPORTED_CURRENCIES.contains(base) || !SUPPORTED_CURRENCIES.contains(target)) {
-            logger.error("Unsupported currency pair: {}/{}", base, target);
-            return null;
-        }
-        String url = "https://data.fixer.io/api/latest?access_key=" + fixerApiKey + "&base=" + base + "&symbols=" + target;
-        try {
-            String response = restTemplate.getForObject(url, String.class);
-            if (response == null || response.trim().isEmpty()) {
-                logger.error("Fixer API returned null or empty response for {}/{}", base, target);
-                return null;
-            }
-            logger.debug("Fixer API response for {}/{}: {}", base, target, response);
-            JsonNode json = objectMapper.readTree(response);
-            if (!json.get("success").asBoolean()) {
-                String errorMessage = json.has("error") && json.get("error").has("message")
-                        ? json.get("error").get("message").asText("Unknown error") : "Unknown error";
-                logger.error("Fixer API error for {}/{}: {}", base, target, errorMessage);
-                return null;
-            }
-            JsonNode rates = json.get("rates");
-            if (rates == null || !rates.has(target)) {
-                logger.error("Fixer API response missing 'rates' or target currency {} for {}/{}", target, base, target);
-                return null;
-            }
-            JsonNode rateNode = rates.get(target);
-            if (rateNode == null || rateNode.isNull() || rateNode.asText().isEmpty()) {
-                logger.error("Fixer API returned null or empty rate for {}/{}", base, target);
-                return null;
-            }
-            BigDecimal baseRate = new BigDecimal(rateNode.asText()).setScale(6, RoundingMode.HALF_UP);
-            BigDecimal liborSpread = calculateLiborSpread(customerType);
-            BigDecimal finalRate = baseRate.add(baseRate.multiply(liborSpread)).setScale(6, RoundingMode.HALF_UP);
-            return new CurrencyExchangeRate(base, target, baseRate, finalRate, customerType);
-        } catch (Exception e) {
-            logger.error("Error fetching exchange rate for {}/{} ({}): {}", base, target, customerType, e.getMessage(), e);
-            return null;
-        }
-    }
-
-    @CacheEvict(value = "currencyRates", key = "#base + '-' + #target + '-' + #customerType")
-    public void clearCacheForKey(String base, String target, String customerType) {
-        String id = generateId(base, target, customerType);
-        logger.info("Cleared cache for ID: {}", id);
-    }
-
-    @CacheEvict(value = "currencyRates", allEntries = true)
-    public void clearAllCurrencyCache() {
-        logger.info("Manually cleared all currency caches");
-    }
-
-    @Scheduled(fixedRate = 600000) // Every 10 minutes, matching TTL
-    @CacheEvict(value = "currencyRates", allEntries = true)
-    public void evictAllCurrencyCaches() {
-        logger.info("Scheduled eviction of all currency caches");
-    }
-
-    private static String generateId(String base, String target, String customerType) {
-        return String.format("%s-%s-%s", base.toUpperCase(), target.toUpperCase(), customerType.toLowerCase());
+    private String generateId(String base, String target, String customerType) {
+        return String.format("%s-%s-%s",
+                base.toUpperCase(),
+                target.toUpperCase(),
+                customerType.toLowerCase()
+        );
     }
 }
