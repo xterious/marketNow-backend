@@ -11,14 +11,11 @@ import java.util.Optional;
 @Repository
 public interface StockRepository extends MongoRepository<Stock, String> {
     
-    // Find by symbol
-    Optional<Stock> findBySymbol(String symbol);
+    // Find by symbol (should match the field name in Stock)
+    Optional<Stock> findByStockSymbol(String stockSymbol);
     
-    // Find by exchange
-    List<Stock> findByExchange(String exchange);
-    
-    // Find by currency
-    List<Stock> findByCurrency(String currency);
+    // Find by marketOrigin (used for exchange/currency)
+    List<Stock> findByMarketOrigin(String marketOrigin);
     
     // Find by type
     List<Stock> findByType(String type);

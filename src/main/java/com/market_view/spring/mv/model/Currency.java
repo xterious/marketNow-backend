@@ -1,4 +1,4 @@
-package com.marketview.Spring.MV.model;
+package com.market_view.spring.mv.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

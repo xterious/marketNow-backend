@@ -67,7 +67,7 @@ public class StockService {
             for (JsonNode node : jsonArray) {
                 String symbol = node.has("symbol") ? node.get("symbol").asText() : null;
                 if (symbol != null) {
-                    Stock stock = fetchStockQuoteFromAPI(symbol, exchange);
+                    Stock stock = fetchStockQuoteFromAPI(symbol);
                     stocks.add(stock);
                     if (++count >= maxQuoteRequests) break;
                 }
@@ -87,11 +87,8 @@ public class StockService {
 
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            JsonNode json = objectMapper.readTree(response.getBody());
-            Double currentPrice = json.has("c") ? json.get("c").asDouble() : null;
-
-            return new Stock(symbol, "USD", symbol, symbol, null, null, "Common Stock",
-                    currentPrice, null, null, null, null, null, null);
+            // Only stockSymbol is available here, so set others as null or default
+            return new Stock(symbol, null, null, null);
         } catch (Exception e) {
             logger.error("Error fetching quote for {}: {}", symbol, e.getMessage());
             throw new CustomException("Error fetching quote for " + symbol, 
@@ -100,22 +97,7 @@ public class StockService {
     }
 
     // Private method to fetch individual stock quote from API with exchange information
-    private Stock fetchStockQuoteFromAPI(String symbol, String exchange) {
-        String url = "https://finnhub.io/api/v1/quote?symbol=" + symbol + "&token=" + finnhubApiKey;
 
-        try {
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            JsonNode json = objectMapper.readTree(response.getBody());
-            Double currentPrice = json.has("c") ? json.get("c").asDouble() : null;
-
-            return new Stock(symbol, "USD", symbol, symbol, null, null, "Common Stock",
-                    currentPrice, exchange, null, null, null, null, null);
-        } catch (Exception e) {
-            logger.error("Error fetching quote for {}: {}", symbol, e.getMessage());
-            throw new CustomException("Error fetching quote for " + symbol, 
-                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     // Scheduled task: Update stock data in database every hour
     @Scheduled(fixedRate = 3600000) // 1 hour
@@ -129,12 +111,14 @@ public class StockService {
 
             for (Stock existingStock : existingStocks) {
                 try {
-                    Stock updatedStock = fetchStockQuoteFromAPI(existingStock.getSymbol());
-                    // Update the existing stock entity with new data
-                    existingStock.setCurrentPrice(updatedStock.getCurrentPrice());
+                    Stock updatedStock = fetchStockQuoteFromAPI(existingStock.getStockSymbol());
+                    // Update the existing stock entity with new data (only fields that exist)
+                    existingStock.setMarketOrigin(updatedStock.getMarketOrigin());
+                    existingStock.setStockName(updatedStock.getStockName());
+                    existingStock.setType(updatedStock.getType());
                     stockRepository.save(existingStock);
                 } catch (Exception e) {
-                    logger.warn("Failed to update stock data for symbol: {}", existingStock.getSymbol());
+                    logger.warn("Failed to update stock data for symbol: {}", existingStock.getStockSymbol());
                 }
             }
 
@@ -148,5 +132,10 @@ public class StockService {
     @CacheEvict(value = {"stockSymbols", "stockQuotes"}, allEntries = true)
     public void clearStockCache() {
         logger.info("Manually cleared stock cache");
+    }
+
+    // Save a Stock entity to MongoDB
+    public Stock saveStock(Stock stock) {
+        return stockRepository.save(stock);
     }
 }
